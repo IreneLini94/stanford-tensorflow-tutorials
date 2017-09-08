@@ -1,10 +1,11 @@
+#encoding:utf-8
 import time
 import numpy as np
 import tensorflow as tf
-
+#读取mnist数据集
 from tensorflow.examples.tutorials.mnist import input_data
 MNIST = input_data.read_data_sets("/data/mnist",one_hot=True)
-
+#设置超参数
 learning_rate = 1e-3
 batch_size = 128
 n_epoches = 15
@@ -16,22 +17,25 @@ w = tf.Variable(tf.random_normal(shape=[784,10], stddev=0.01), name="weights")
 b = tf.Variable(tf.zeros([1, 10]), name="bias")
 logits = tf.matmul(X,w) + b
 """
+#定义一些方便设计神经层的函数
+#权重函数
 def weight_variable(shape):
     initial = tf.truncated_normal(shape, stddev=0.0001)
     return tf.Variable(initial)
-
+#偏置函数
 def bias_variable(shape):
     initial = tf.constant(0.0, shape=shape)
     return tf.Variable(initial)
-
+#卷积层
 def conv2d(x, W, padding):
     return tf.nn.conv2d(x,W,strides=[1,1,1,1],padding=padding)
-
+#池化层
 def max_pool_2x2(x):
     return tf.nn.max_pool(x, ksize=[1,2,2,1],
                          strides=[1,2,2,1],
                          padding='SAME')
 
+#模仿lenet的结构设计卷积神经网络
 X_image = tf.reshape(X,[-1,28,28,1])
 
 W_conv1 = weight_variable([5,5,1,6])
@@ -66,10 +70,12 @@ loss = -tf.reduce_mean(Y*tf.log(y_conv))
 #entropy = tf.nn.softmax_cross_entropy_with_logits(logits=logits,labels=Y)
 #loss = tf.reduce_mean(entropy)
 
+#优化步骤
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
 
 init = tf.global_variables_initializer()
 
+#开始训练
 with tf.Session() as sess:
     sess.run(init)
     n_batches = int(MNIST.train.num_examples/batch_size)
@@ -79,6 +85,7 @@ with tf.Session() as sess:
             _, batch_loss = sess.run([optimizer, loss], feed_dict={X:X_batch, Y:Y_batch})
             if (i*n_batches + j )%100 == 0:
                 print "iter {} loss is : {}".format(i*n_batches+j, batch_loss)
+    #在测试集上测试效果
     n_batches = int(MNIST.test.num_examples/batch_size)
     total_correct_preds = 0
     for i in range(n_batches):
@@ -89,3 +96,4 @@ with tf.Session() as sess:
         accuracy = tf.reduce_sum(tf.cast(correct_preds,tf.float32))
         total_correct_preds += sess.run(accuracy)
     print "Accuracy {0}".format(total_correct_preds/MNIST.test.num_examples)
+    #最终准确率在98%以上
